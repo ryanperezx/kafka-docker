@@ -1,0 +1,116 @@
+version: '2'
+services:
+  postgres-local:
+    image: postgres
+    environment:
+      POSTGRES_USER: delivery_user
+      POSTGRES_PASSWORD: delivery_pass
+      POSTGRES_DB: microservices-delivery
+    ports:
+      - 5431:5432
+    networks:
+      - kafka-network
+    restart: unless-stopped
+    # https://stackoverflow.com/questions/62697071/docker-compose-postgres-upgrade-initdb-error-directory-var-lib-postgresql-da
+    volumes:
+      - ./postgres/postgresql.conf:/etc/postgresql.conf
+    command: ["postgres", "-c", "config_file=/etc/postgresql.conf"]
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    networks:
+      - kafka-network
+    ports:
+      - 22181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - zookeeper
+    networks:
+      - kafka-network
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      AUTO_CREATE_TOPICS_ENABLE: 'True'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    hostname: schema-registry
+    depends_on:
+      - kafka-broker
+    networks:
+      - kafka-network
+    ports:
+      - 28081:8081
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: 'zookeeper:2181'
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-broker:9092,PLAINTEXT_INTERNAL://localhost:29092
+      SCHEMA_REGISTRY_DEBUG: 'true'
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.6.0
+    depends_on:
+      - kafka-broker
+      - schema-registry
+    networks:
+      - kafka-network
+    ports:
+      - 28093:8093
+    links:
+      - postgres-local
+    volumes:
+      - "./kafka-connect/plugins:/etc/kafka/connect/plugins"
+      - "./scripts/build-connectors.sh:/etc/kafka/scripts/build-connectors.sh"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kafka-broker:9092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: compose-sink-group
+      CONNECT_CONFIG_STORAGE_TOPIC: quickstart-config
+      CONNECT_OFFSET_STORAGE_TOPIC: quickstart-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: quickstart-status
+      CONNECT_KEY_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect-sink"
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
+      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_PLUGIN_PATH: '/usr/share/java,/usr/share/confluent-hub-components/,/etc/kafka/connect/plugins'
+    command:
+      - /etc/kafka/scripts/build-connectors.sh
+        
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:53a6553765a806eda9905c43bfcfe09da6812035
+    depends_on:
+      - kafka-broker
+      - schema-registry
+      - kafka-connect
+    networks:
+      - kafka-network
+    ports:
+      - 8080:8080
+    environment:
+      DYNAMIC_CONFIG_ENABLED: 'false'
+      SPRING_CONFIG_ADDITIONAL-LOCATION: /etc/kafka/kafka-ui/config.yml 
+    volumes:
+      - ./kafka-ui/config.yml:/etc/kafka/kafka-ui/config.yml
+
+networks:
+  kafka-network:

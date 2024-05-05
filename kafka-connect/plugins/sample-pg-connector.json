@@ -1,0 +1,26 @@
+{
+    "name": "sample-pg-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "database.hostname": "postgres-local",
+        "database.port": "5432",
+        "database.user": "delivery_user",
+        "database.password": "delivery_pass",
+        "database.dbname": "microservices-delivery",
+        "database.server.name": "microservices-delivery.localhost",
+        "database.include.list": "microservices-delivery",
+        "database.tcpKeepAlive": "true",
+        "decimal.handling.mode": "string",
+        "heartbeat.interval.ms": "1000",
+        "hstore.handling.mode": "json",
+        "plugin.name": "pgoutput",
+        "schema.refresh.mode": "columns_diff_exclude_unchanged_toast",
+        "schema.include.list": "public,shipment",
+        "table.include.list": "public.return_scan_log,shipment.shipment_features",
+        "tasks.max": "1",
+        "topic.prefix": "microservices-delivery-dev",
+        "topic.creation.default.replication.factor": 1,
+        "topic.creation.default.partitions": 1,
+        "slot.name" : "sample_pg_dbz"
+    }
+}
