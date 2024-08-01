@@ -51,3 +51,18 @@ ALTER TABLE shipment.shipment_features OWNER TO delivery_user;
 
 ALTER TABLE ONLY shipment.shipment_features
     ADD CONSTRAINT shipment_features_pk PRIMARY KEY (id);
+
+CREATE TABLE public.heartbeat (
+	id int4 NOT NULL PRIMARY KEY UNIQUE,
+	created_at timestamp NOT NULL
+);
+
+CREATE SEQUENCE public.heartbeat
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+   
+ALTER TABLE public.heartbeat OWNER TO delivery_user;

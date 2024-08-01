@@ -8,17 +8,12 @@
         "database.password": "delivery_pass",
         "database.dbname": "microservices-delivery",
         "database.server.name": "microservices-delivery.localhost",
-        "database.include.list": "microservices-delivery",
         "database.tcpKeepAlive": "true",
         "database.history.kafka.bootstrap.servers": "kafka-broker:29092",
-        "decimal.handling.mode": "string",
         "heartbeat.interval.ms": "1000",
-        "hstore.handling.mode": "json",
-        "plugin.name": "wal2json",
-        "schema.refresh.mode": "columns_diff_exclude_unchanged_toast",
-        "schema.include.list": "public",
-        "table.include.list": "public.return_scan_log",
-        "tasks.max": "2",
+        "heartbeat.action.query": "INSERT INTO public.heartbeat (id, created_at) VALUES (1, NOW()) ON CONFLICT(id) DO UPDATE SET created_at=EXCLUDED.created_at;",
+        "plugin.name": "pgoutput",
+        "tasks.max": "1",
         "slot.name" : "sample_pg_dbz",
         "topic.prefix": "delivery-dev",
         "topic.creation.default.replication.factor": 1,
@@ -26,8 +21,6 @@
         "topic.creation.default.cleanup.policy": "compact",
         "topic.creation.default.compression.type": "lz4",
         "publication.autocreate.mode": "all_tables",
-        "publication.name": "dbz_publication",
-        "errors.log.enable": "true",
-        "errors.log.include.messages": "true"
+        "publication.name": "dbz_publication"
     }
 }

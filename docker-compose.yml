@@ -1,7 +1,6 @@
 version: '2'
 services:
   postgres-local:
-    image: postgres:13.15-bookworm
     build:
       context: ./postgres
     environment:
@@ -9,7 +8,7 @@ services:
       POSTGRES_PASSWORD: delivery_pass
       POSTGRES_DB: microservices-delivery
     ports:
-      - 5432:5432
+      - 5430:5432
     networks:
       - kafka-network
     restart: unless-stopped
@@ -40,7 +39,8 @@ services:
       - registry.env
 
   kafka-connect:
-    image: confluentinc/cp-kafka-connect:7.4.5
+    build:
+      context: ./kafka-connect
     depends_on:
       - kafka-broker
       - schema-registry
@@ -53,11 +53,8 @@ services:
       - postgres-local
     volumes:
       - "./kafka-connect/plugins:/etc/kafka/connect/plugins"
-      - "./scripts/build-connectors.sh:/etc/kafka/scripts/build-connectors.sh"
     env_file:
       - connect.env
-    command:
-      - /etc/kafka/scripts/build-connectors.sh
         
   kafka-ui:
     container_name: kafka-ui
