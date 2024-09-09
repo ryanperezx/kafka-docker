@@ -1,4 +1,3 @@
-version: '2'
 services:
   postgres-local:
     build:
@@ -19,6 +18,7 @@ services:
   
   kafka-broker:
     image: confluentinc/cp-kafka:7.4.5
+    container_name: kafka-broker
     networks:
       - kafka-network
     ports:
@@ -52,7 +52,7 @@ services:
     links:
       - postgres-local
     volumes:
-      - "./kafka-connect/plugins:/etc/kafka/connect/plugins"
+      - ./kafka-connect/plugins:/etc/kafka/connect/plugins
     env_file:
       - connect.env
         
@@ -75,3 +75,5 @@ services:
 
 networks:
   kafka-network:
+    name: kafka-network
+    external: true
