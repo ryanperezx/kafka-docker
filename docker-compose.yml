@@ -73,7 +73,17 @@ services:
     volumes:
       - ./kafka-ui/config.yml:/etc/kafka/kafka-ui/config.yml
 
+  shipment-generator:
+    build:
+      context: ./shipment-generator
+    depends_on:
+      - kafka-broker
+      - kafka-connect
+    networks:
+      - kafka-network
+    volumes:
+      - ./shipment-generator:/shipment-generator
 networks:
   kafka-network:
     name: kafka-network
-    external: true
+    driver: bridge
