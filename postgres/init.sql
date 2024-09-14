@@ -1,68 +1,69 @@
 ALTER USER delivery_user WITH REPLICATION SUPERUSER;
 
-CREATE SCHEMA shipment;
-CREATE TABLE public.return_scan_log (
-    id integer NOT NULL,
-    distance_from_hub double precision NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    shipment_id integer NOT NULL,
-    driver_id integer NOT NULL,
-    subco_id integer NOT NULL
+CREATE TABLE public.customers (
+    customer_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    phone VARCHAR(15),
+    address TEXT NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE SEQUENCE public.return_scan_log_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER TABLE public.return_scan_log OWNER TO delivery_user;
-
-ALTER TABLE ONLY public.return_scan_log
-    ADD CONSTRAINT return_scan_log_pk PRIMARY KEY (id);
-
-    
-CREATE TABLE shipment.shipment_features (
-    id integer NOT NULL,
-    shipment_id integer NOT NULL,
-    require_proof_of_delivery boolean DEFAULT false NOT NULL,
-    no_signature boolean DEFAULT false NOT NULL,
-    no_neighbour_delivery boolean DEFAULT false NOT NULL,
-    deliver_in_mail_box boolean DEFAULT false NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    require_age_check boolean DEFAULT false,
-    require_otp boolean DEFAULT false,
-    uses_sms_feature boolean DEFAULT false NOT NULL,
-    has_branded_track_trace boolean DEFAULT false
+-- Table to store product details
+CREATE TABLE public.products (
+    product_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10, 2) NOT NULL,
+    stock_quantity INT DEFAULT 0,
+    weight DECIMAL(10, 3) DEFAULT 0.0,  -- in kg
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE SEQUENCE shipment.shipment_features_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER TABLE shipment.shipment_features OWNER TO delivery_user;
-
-ALTER TABLE ONLY shipment.shipment_features
-    ADD CONSTRAINT shipment_features_pk PRIMARY KEY (id);
-
-CREATE TABLE public.heartbeat (
-	id int4 NOT NULL PRIMARY KEY UNIQUE,
-	created_at timestamp NOT NULL
+-- Table to store order details
+CREATE TABLE public.orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES customers(customer_id),
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',  -- e.g. pending, shipped, delivered
+    shipping_address TEXT NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    postal_code VARCHAR(20) NOT NULL,
+    country VARCHAR(100) NOT NULL
 );
 
-CREATE SEQUENCE public.heartbeat
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-   
-ALTER TABLE public.heartbeat OWNER TO delivery_user;
+-- Table to store ordered products
+CREATE TABLE public.order_items (
+    order_item_id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id) ON DELETE CASCADE,
+    product_id INT REFERENCES products(product_id),
+    quantity INT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL
+);
+
+-- Table to store shipment details
+CREATE TABLE public.shipments (
+    shipment_id SERIAL PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id),
+    tracking_number VARCHAR(100) UNIQUE NOT NULL,
+    carrier VARCHAR(100) NOT NULL,  -- e.g., FedEx, UPS, DHL
+    shipment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estimated_delivery_date TIMESTAMP,
+    status VARCHAR(50) DEFAULT 'in transit'  -- e.g., in transit, delivered
+);
+
+-- Table to store tracking events
+CREATE TABLE public.tracking_events (
+    tracking_event_id SERIAL PRIMARY KEY,
+    shipment_id INT REFERENCES shipments(shipment_id),
+    event_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    location VARCHAR(255) NOT NULL,
+    event_description TEXT NOT NULL
+);
