@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from models_public import Customers, Products, Orders, OrderItems, Shipments, TrackingEvents
 import signal
-
+from time import sleep
 def handle_sigterm(*args):
     raise KeyboardInterrupt()
 
@@ -40,15 +40,15 @@ def create_customer():
 def create_product():
     return Products(
         name=faker.ecommerce_name(),
-        price=faker.ecommerce_price(),
+        price=faker.ecommerce_price(as_int=False),
         description=faker.ecommerce_material() + ' ' + faker.ecommerce_category(),
         stock_quantity=faker.random_int(5, 999),
         weight=faker.numerify(text='%#.##'),
         created_at=datetime.now()
     )
-def create_order(customer_id):
+def create_order(customer_id, total_amount):
     return Orders(
-        total_amount=faker.ecommerce_price(),
+        total_amount=total_amount,
         shipping_address=faker.address(),
         city=faker.city(),
         state=faker.state(),
@@ -70,12 +70,13 @@ def create_order_item(order_id, product_id, product_price):
 
 
 def create_shipment(order_id, order_date):
+    shipment_date = timedelta(days=faker.random_int(1, 2))
     return Shipments(
         tracking_number=faker.bothify(text='????-########'),
         carrier=faker.random_choices(elements=('Sedan','Motorcycle','Van'), length=1)[0],
         order_id=order_id,
-        shipment_date=order_date + timedelta(days=2),
-        estimated_delivery_date=order_date + timedelta(days=5),
+        shipment_date=order_date + shipment_date,
+        estimated_delivery_date=order_date + shipment_date + timedelta(days=faker.random_int(1, 5)),
         status=faker.random_choices(elements=('in transit','at sorting hub','at delivery hub', 'delivered'), length=1)[0],
     )
 
@@ -88,6 +89,7 @@ def create_tracking_event(shipment_id):
     )
 
 if __name__ == '__main__':
+    sleep(60)
     signal.signal(signal.SIGTERM, handle_sigterm)
     Base.metadata.create_all(engine)
 
@@ -103,9 +105,10 @@ if __name__ == '__main__':
             session.flush()
             product_no = faker.random_int(1, 3)
             product_list = [create_product() for _ in range(product_no)]
+            product_total_amount = sum([product.price for product in product_list])
             session.add_all(product_list)
             session.flush()
-            order = create_order(customer.customer_id)
+            order = create_order(customer.customer_id, product_total_amount)
             session.add(order)
             session.flush()
             order_item_list = [create_order_item(order.order_id, product.product_id, product.price) for product in product_list]
@@ -118,6 +121,8 @@ if __name__ == '__main__':
             session.add(tracking_event)
             session.flush()
             session.commit()
+
+            sleep(1)
     except KeyboardInterrupt:
         session.close()
         logging.info('Exiting application..')
