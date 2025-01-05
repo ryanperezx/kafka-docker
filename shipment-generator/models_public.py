@@ -68,6 +68,7 @@ class Orders(Base):
     customer_id: Mapped[Optional[int]] = mapped_column(Integer)
     order_date: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     status: Mapped[Optional[str]] = mapped_column(String(50), server_default=text("'pending'::character varying"))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
     customer: Mapped['Customers'] = relationship('Customers', back_populates='orders')
     order_items: Mapped[List['OrderItems']] = relationship('OrderItems', back_populates='order')
@@ -88,6 +89,7 @@ class OrderItems(Base):
     price: Mapped[decimal.Decimal] = mapped_column(Numeric(10, 2))
     order_id: Mapped[Optional[int]] = mapped_column(Integer)
     product_id: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
     order: Mapped['Orders'] = relationship('Orders', back_populates='order_items')
     product: Mapped['Products'] = relationship('Products', back_populates='order_items')
@@ -109,6 +111,7 @@ class Shipments(Base):
     shipment_date: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
     estimated_delivery_date: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime)
     status: Mapped[Optional[str]] = mapped_column(String(50), server_default=text("'in transit'::character varying"))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
     order: Mapped['Orders'] = relationship('Orders', back_populates='shipments')
     tracking_events: Mapped[List['TrackingEvents']] = relationship('TrackingEvents', back_populates='shipment')
@@ -127,5 +130,6 @@ class TrackingEvents(Base):
     event_description: Mapped[str] = mapped_column(Text)
     shipment_id: Mapped[Optional[int]] = mapped_column(Integer)
     event_date: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
+    created_at: Mapped[Optional[datetime.datetime]] = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
     shipment: Mapped['Shipments'] = relationship('Shipments', back_populates='tracking_events')
