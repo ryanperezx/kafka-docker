@@ -36,7 +36,8 @@ CREATE TABLE public.orders (
     city VARCHAR(100) NOT NULL,
     state VARCHAR(100) NOT NULL,
     postal_code VARCHAR(20) NOT NULL,
-    country VARCHAR(100) NOT NULL
+    country VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Table to store ordered products
@@ -45,7 +46,8 @@ CREATE TABLE public.order_items (
     order_id INT REFERENCES orders(order_id) ON DELETE CASCADE,
     product_id INT REFERENCES products(product_id),
     quantity INT NOT NULL,
-    price DECIMAL(10, 2) NOT NULL
+    price DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Table to store shipment details
@@ -56,7 +58,8 @@ CREATE TABLE public.shipments (
     carrier VARCHAR(100) NOT NULL,  -- e.g., FedEx, UPS, DHL
     shipment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estimated_delivery_date TIMESTAMP,
-    status VARCHAR(50) DEFAULT 'in transit'  -- e.g., in transit, delivered
+    status VARCHAR(50) DEFAULT 'in transit',  -- e.g., in transit, delivered
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Table to store tracking events
@@ -65,5 +68,6 @@ CREATE TABLE public.tracking_events (
     shipment_id INT REFERENCES shipments(shipment_id),
     event_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     location VARCHAR(255) NOT NULL,
-    event_description TEXT NOT NULL
+    event_description TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
